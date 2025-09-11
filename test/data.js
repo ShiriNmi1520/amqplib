@@ -200,11 +200,13 @@ const domainProps = [
   [FieldArray, (a) => Array.isArray(a)],
 ];
 
-describe('Domains', () => {
-  domainProps.forEach((p) => {
-    it(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({ times: 500 }));
+if (global.describe) {
+  describe('Domains', () => {
+    domainProps.forEach((p) => {
+      it(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({ times: 500 }));
+    });
   });
-});
+}
 
 // For methods and properties (as opposed to field table values) it's
 // easier just to accept and produce numbers for timestamps.

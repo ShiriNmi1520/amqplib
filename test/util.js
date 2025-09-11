@@ -157,41 +157,6 @@ function kCallback(k, ek) {
   };
 }
 
-// A noddy way to make tests depend on the node version.
-function versionGreaterThan(actual, spec) {
-  function int(e) {
-    return parseInt(e, 10);
-  }
-
-  const version = actual.split('.').map(int);
-  const desired = spec.split('.').map(int);
-  for (let i = 0; i < desired.length; i++) {
-    const a = version[i];
-    const b = desired[i];
-    if (a !== b) return a > b;
-  }
-  return false;
-}
-
-if (global.describe) {
-  describe('versionGreaterThan', () => {
-    it('full spec', () => {
-      assert(versionGreaterThan('0.8.26', '0.6.12'));
-      assert(versionGreaterThan('0.8.26', '0.8.21'));
-    });
-
-    it('partial spec', () => {
-      assert(versionGreaterThan('0.9.12', '0.8'));
-    });
-
-    it('not greater', () => {
-      assert(!versionGreaterThan('0.8.12', '0.8.26'));
-      assert(!versionGreaterThan('0.6.2', '0.6.12'));
-      assert(!versionGreaterThan('0.8.29', '0.8'));
-    });
-  });
-}
-
 module.exports = {
   socketPair: socketPair,
   runServer: runServer,
@@ -203,5 +168,4 @@ module.exports = {
   kCallback: kCallback,
   schedule: schedule,
   randomString: randomString,
-  versionGreaterThan: versionGreaterThan,
 };
