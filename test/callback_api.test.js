@@ -1,43 +1,8 @@
 const { describe, it, afterEach } = require('node:test');
 const assert = require('node:assert');
-const api = require('../callback_api');
-const util = require('./util');
-const schedule = util.schedule;
-const randomString = util.randomString;
 const domain = require('node:domain');
-
-const URL = process.env.URL || 'amqp://localhost';
-
-function connect(cb) {
-  api.connect(URL, {}, cb);
-}
-
-function ignore() {}
-
-function twice(done) {
-  let first = (err) => {
-    if (err === undefined) second = done;
-    else {
-      second = ignore;
-      done(err);
-    }
-  };
-  let second = (err) => {
-    if (err === undefined) first = done;
-    else {
-      first = ignore;
-      done(err);
-    }
-  };
-  return {
-    first: (err) => {
-      first(err);
-    },
-    second: (err) => {
-      second(err);
-    },
-  };
-}
+const { connect } = require('../callback_api');
+const { schedule, randomString, latch } = require('./util');
 
 function waitForMessages(ch, q, cb) {
   ch.checkQueue(q, (e, ok) => {
@@ -144,27 +109,27 @@ describe('assert, check, delete', () => {
 
   channel_test('fail on check non-queue', (_ch, done) => {
     ch = _ch;
-    const both = twice(done);
+    const decrementLatch = latch(2, done);
     ch.on('error', (err) => {
       assert.match(err.message, /Channel closed by server/)
-      both.first()
+      decrementLatch()
     });
     ch.checkQueue('test.cb.nothere', (err) => {
       assert.match(err.message, /QueueDeclare; 404 \(NOT-FOUND\)/);
-      both.second();
+      decrementLatch();
     });
   });
 
   channel_test('fail on check non-exchange', (_ch, done) => {
     ch = _ch;
-    const both = twice(done);
+    const decrementLatch = latch(2, done);
     ch.on('error', (err) => {
       assert.match(err.message, /Channel closed by server/)
-      both.first()
+      decrementLatch()
     });
     ch.checkExchange('test.cb.nothere', (err) => {
       assert.match(err.message, /ExchangeDeclare; 404 \(NOT-FOUND\)/);
-      both.second();
+      decrementLatch();
     });
   });
 });
@@ -416,7 +381,7 @@ describe('Error handling', () => {
       done();
     });
     ch.assertQueue('test.cb.consume-with-error', {}, (_err, _ok) => {
-      ch.consume('test.cb.consume-with-error', ignore, { noAck: true }, () => {
+      ch.consume('test.cb.consume-with-error', () => { }, { noAck: true }, () => {
         throw new Error('Spurious callback error');
       });
     });
@@ -427,20 +392,20 @@ describe('Error handling', () => {
   it failed because only the domain error handler was ever invoked and not the
   channel.get error callback.
 
-  The original test passed because twice.first short circuits on error rather
+  The original test passed because twice.first (refactored to use util.latch) short circuits on error rather
   than waiting for twice.second to be invoked. I have verified that the pre-refactored
   amqplib does not invoke the channel.get callback when the queue does not exist.
   See lib/callback_model.js
   */
   error_test('Get from non-queue invokes error', (ch, done, dom) => {
-    const both = twice(() => done());
+    const decrementLatch = latch(2, () => done());
     dom.on('error', (err) => {
       assert.match(err.message, /404 \(NOT-FOUND\)/);
-      both.first(err);
+      decrementLatch(err);
     });
     ch.get('', {}, (err) => {
       assert.match(err.message, /404 \(NOT-FOUND\)/)
-      both.second(err)
+      decrementLatch(err)
     });
   });
 
@@ -452,18 +417,18 @@ describe('Error handling', () => {
   the original test did not supply one, mistakenly providing a message handler
   function instead.
 
-  The original test passed because twice.first short circuits on error
+  The original test passed because twice.first (refactored to use util.latch) short circuits on error
   rather than waiting for twice.second to be invoked.
   */
   error_test('Consume from non-queue invokes error', (ch, done, dom) => {
-    const both = twice((_err) => done());
+    const decrementLatch = latch(2, done);
     dom.on('error', (err) => {
       assert.match(err.message, /404 \(NOT-FOUND\)/);
-      both.first(err);
+      decrementLatch();
     });
     ch.consume('', () => { }, {}, (err) => {
       assert.match(err.message, /404 \(NOT-FOUND\)/)
-      both.second(err)
+      decrementLatch()
     });
   });
 });
