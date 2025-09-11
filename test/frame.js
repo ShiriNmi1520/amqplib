@@ -98,7 +98,7 @@ const sequence = claire.sequence;
 const transform = claire.transform;
 const sized = claire.sized;
 
-const assertEqualModuloDefaults = require('./codec').assertEqualModuloDefaults;
+const assertEqualModuloDefaults = require('./util').assertEqualModuloDefaults;
 
 const Trace = label('frame trace', repeat(choice.apply(choice, amqp.methods)));
 
