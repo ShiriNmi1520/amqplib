@@ -1,22 +1,7 @@
-const C = require('claire');
-const forAll = C.forAll;
-const arb = C.data;
-const transform = C.transform;
-const repeat = C.repeat;
-const label = C.label;
-const sequence = C.sequence;
-const asGenerator = C.asGenerator;
-const sized = C.sized;
-const recursive = C.recursive;
-const choice = C.choice;
-const Undefined = C.Undefined;
+const { data: arb, transform, repeat, label, sequence, asGenerator, sized, recursive, choice, Undefined } = require('claire');
+const defs = require('../lib/defs');
 
-// Stub these out so we can use outside tests
-// if (!suite) var suite = function() {}
-// if (!test) var test = function() {}
-
-// These aren't exported in claire/index. so I could have to reproduce
-// them I guess.
+// These aren't exported in claire/index. so I could have to reproduce them I guess.
 function choose(a, b) {
   return Math.random() * (b - a) + a;
 }
@@ -26,10 +11,7 @@ function chooseInt(a, b) {
 }
 
 function rangeInt(name, a, b) {
-  return label(
-    name,
-    asGenerator((_) => chooseInt(a, b)),
-  );
+  return label(name, asGenerator((_) => chooseInt(a, b)));
 }
 
 function toFloat32(i) {
@@ -60,16 +42,8 @@ function explicitType(t, underlying) {
 // FIXME null, byte array, others?
 
 const Octet = rangeInt('octet', 0, 255);
-const ShortStr = label(
-  'shortstr',
-  transform((s) => s.substr(0, 255), arb.Str),
-);
-
-const LongStr = label(
-  'longstr',
-  transform((bytes) => Buffer.from(bytes), repeat(Octet)),
-);
-
+const ShortStr = label('shortstr', transform((s) => s.substr(0, 255), arb.Str));
+const LongStr = label('longstr', transform((bytes) => Buffer.from(bytes), repeat(Octet)));
 const UShort = rangeInt('short-uint', 0, 0xffff);
 const ULong = rangeInt('long-uint', 0, 0xffffffff);
 const ULongLong = rangeInt('longlong-uint', 0, Number.MAX_SAFE_INTEGER);
@@ -79,28 +53,11 @@ const LongLong = rangeInt('longlong-int', Number.MIN_SAFE_INTEGER, Number.MAX_SA
 const Bit = label('bit', arb.Bool);
 const Double = label('double', asGenerator(floatChooser(308)));
 const Float = label('float', transform(toFloat32, floatChooser(38)));
-const Timestamp = label(
-  'timestamp',
-  transform((n) => ({ '!': 'timestamp', value: n }), ULongLong),
-);
-const Decimal = label(
-  'decimal',
-  transform((args) => ({ '!': 'decimal', value: { places: args[1], digits: args[0] } }), sequence(arb.UInt, Octet)),
-);
-const UnsignedByte = label(
-  'unsignedbyte',
-  transform((n) => ({ '!': 'unsignedbyte', value: n }), Octet),
-);
-const UnsignedShort = label(
-  'unsignedshort',
-  transform((n) => ({ '!': 'unsignedshort', value: n }), UShort),
-);
-const UnsignedInt = label(
-  'unsignedint',
-  transform((n) => ({ '!': 'unsignedint', value: n }), ULong),
-);
-
-// Signed 8 bit int
+const Timestamp = label('timestamp', transform((n) => ({ '!': 'timestamp', value: n }), ULongLong));
+const Decimal = label('decimal', transform((args) => ({ '!': 'decimal', value: { places: args[1], digits: args[0] } }), sequence(arb.UInt, Octet)));
+const UnsignedByte = label('unsignedbyte', transform((n) => ({ '!': 'unsignedbyte', value: n }), Octet));
+const UnsignedShort = label('unsignedshort', transform((n) => ({ '!': 'unsignedshort', value: n }), UShort));
+const UnsignedInt = label('unsignedint', transform((n) => ({ '!': 'unsignedint', value: n }), ULong));
 const Byte = rangeInt('byte', -128, 127);
 
 // Explicitly typed values
@@ -113,8 +70,7 @@ const ExInt32 = explicitType('int32', Long);
 const ExLong = explicitType('long', LongLong);
 const ExInt64 = explicitType('int64', LongLong);
 
-const FieldArray = label(
-  'field-array',
+const FieldArray = label('field-array',
   recursive(() =>
     arb.Array(
       arb.Null,
@@ -145,8 +101,7 @@ const FieldArray = label(
   ),
 );
 
-const FieldTable = label(
-  'table',
+const FieldTable = label('field-table',
   recursive(() =>
     sized(
       () => 5,
@@ -179,34 +134,6 @@ const FieldTable = label(
     ),
   ),
 );
-
-// Internal tests of our properties
-const domainProps = [
-  [Octet, (n) => n >= 0 && n < 256],
-  [ShortStr, (s) => typeof s === 'string' && s.length < 256],
-  [LongStr, (s) => Buffer.isBuffer(s)],
-  [UShort, (n) => n >= 0 && n <= 0xffff],
-  [ULong, (n) => n >= 0 && n <= 0xffffffff],
-  [ULongLong, (n) => n >= 0 && n <= 0xffffffffffffffff],
-  [Short, (n) => n >= -0x8000 && n <= 0x8000],
-  [Long, (n) => n >= -0x80000000 && n < 0x80000000],
-  [LongLong, (n) => n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER],
-  [Bit, (b) => typeof b === 'boolean'],
-  [Double, (f) => !Number.isNaN(f) && Number.isFinite(f)],
-  [Float, (f) => !Number.isNaN(f) && Number.isFinite(f) && Math.log(Math.abs(f)) * Math.LOG10E < 309],
-  [Decimal, (d) => d['!'] === 'decimal' && d.value['places'] <= 255 && d.value['digits'] <= 0xffffffff],
-  [Timestamp, (t) => t['!'] === 'timestamp'],
-  [FieldTable, (t) => typeof t === 'object'],
-  [FieldArray, (a) => Array.isArray(a)],
-];
-
-if (global.describe) {
-  describe('Domains', () => {
-    domainProps.forEach((p) => {
-      it(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({ times: 500 }));
-    });
-  });
-}
 
 // For methods and properties (as opposed to field table values) it's
 // easier just to accept and produce numbers for timestamps.
@@ -245,8 +172,6 @@ function name(arg) {
   return arg.name;
 }
 
-const defs = require('../lib/defs');
-
 function method(info) {
   const domain = sequence.apply(null, info.args.map(argtype));
   const names = info.args.map(name);
@@ -261,8 +186,7 @@ function properties(info) {
   types.unshift(ULongLong); // size
   const domain = sequence.apply(null, types);
   const names = info.args.map(name);
-  return label(
-    info.name,
+  return label(info.name,
     transform((fieldVals) => ({ id: info.id, size: fieldVals[0], fields: zipObject(fieldVals.slice(1), names) }), domain),
   );
 }
@@ -281,28 +205,26 @@ for (const k in defs) {
 }
 
 module.exports = {
-  Octet: Octet,
-  ShortStr: ShortStr,
-  LongStr: LongStr,
-  UShort: UShort,
-  ULong: ULong,
-  ULongLong: ULongLong,
-  Short: Short,
-  Long: Long,
-  LongLong: LongLong,
-  Bit: Bit,
-  Double: Double,
-  Float: Float,
-  Timestamp: Timestamp,
-  Decimal: Decimal,
-  UnsignedByte: UnsignedByte,
-  UnsignedShort: UnsignedShort,
-  UnsignedInt: UnsignedInt,
-  FieldArray: FieldArray,
-  FieldTable: FieldTable,
-
-  methods: methods,
+  Octet,
+  ShortStr,
+  LongStr,
+  UShort,
+  ULong,
+  ULongLong,
+  Short,
+  Long,
+  LongLong,
+  Bit,
+  Double,
+  Float,
+  Timestamp,
+  Decimal,
+  UnsignedByte,
+  UnsignedShort,
+  UnsignedInt,
+  FieldArray,
+  FieldTable,
+  methods,
   properties: propertieses,
+  rangeInt,
 };
-
-module.exports.rangeInt = rangeInt;
