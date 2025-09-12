@@ -27,7 +27,8 @@
         "noGlobalIsFinite": "error",
         "noPrototypeBuiltins": "error",
         "noVar": "error",
-        "noExportsInTest": "off"
+        "noExportsInTest": "off",
+        "useIterableCallbackReturn": "off"
       },
       "style": {
         "useSingleVarDeclarator": "error"
