@@ -219,98 +219,102 @@ describe('Connection', () => {
   });
 
   describe('Connection close', () => {
-    it('happy', connectionTest((c, done0) => {
-      const done = latch(2, done0);
-      c.on('close', done);
-      c.open(OPEN_OPTS, kCallback((_ok) => {
-        c.close(kCallback(succeed(done), fail(done)));
-      }, () => { }));
-    }, (send, wait, done) => {
+    it('happy', connectionTest((c, cb) => {
+      const decrementLatch = latch(2, cb);
+      c.on('close', () => decrementLatch());
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.close((err) => {
+          assert.ifError(err);
+          decrementLatch();
+        });
+      });
+    }, (send, wait, cb) => {
       handshake(send, wait)
         .then(wait(defs.ConnectionClose))
-        .then((_close) => {
-          send(defs.ConnectionCloseOk, {});
-        })
-        .then(succeed(done), fail(done));
+        .then((_close) => send(defs.ConnectionCloseOk, {}))
+        .then(cb, cb);
     }));
 
-    it('interleaved close frames', connectionTest((c, done0) => {
-      const done = latch(2, done0);
-      c.on('close', done);
-      c.open(OPEN_OPTS, kCallback((_ok) => {
-        c.close(kCallback(succeed(done), fail(done)));
-      }, done));
-    }, (send, wait, done) => {
+    it('interleaved close frames', connectionTest((c, cb) => {
+      const decrementLatch = latch(2, cb);
+      c.on('close', () => decrementLatch());
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.close((err) => {
+          assert.ifError(err);
+          decrementLatch();
+        });
+      });
+    }, (send, wait, cb) => {
       handshake(send, wait)
         .then(wait(defs.ConnectionClose))
-        .then((_f) => {
-          send(defs.ConnectionClose, {
-            replyText: 'Ha!',
-            replyCode: defs.constants.REPLY_SUCCESS,
-            methodId: 0,
-            classId: 0,
-          });
-        })
+        .then(() => send(defs.ConnectionClose, {
+          replyText: 'Ha!',
+          replyCode: defs.constants.REPLY_SUCCESS,
+          methodId: 0,
+          classId: 0,
+        }))
         .then(wait(defs.ConnectionCloseOk))
-        .then((_f) => {
-          send(defs.ConnectionCloseOk, {});
-        })
-        .then(succeed(done), fail(done));
+        .then(() => send(defs.ConnectionCloseOk, {}))
+        .then(cb, cb);
     }));
 
-    it('server error close', connectionTest((c, done0) => {
-      const done = latch(2, done0);
-      c.on('close', succeed(done));
-      c.on('error', succeed(done));
+    it('server error close', connectionTest((c, cb) => {
+      const decrementLatch = latch(2, cb);
+      c.once('close', (err) => {
+        assert.match(err.message, /Connection closed: 541 \(INTERNAL-ERROR\) with message "Begone"/);
+        decrementLatch();
+      });
+      c.once('error', (err) => {
+        assert.match(err.message, /Connection closed: 541 \(INTERNAL-ERROR\) with message "Begone"/);
+        decrementLatch();
+      });
       c.open(OPEN_OPTS);
-    }, (send, wait, done) => {
+    }, (send, wait, cb) => {
       handshake(send, wait)
-        .then((_f) => {
-          send(defs.ConnectionClose, {
-            replyText: 'Begone',
-            replyCode: defs.constants.INTERNAL_ERROR,
-            methodId: 0,
-            classId: 0,
-          });
-        })
+        .then(() => send(defs.ConnectionClose, {
+          replyText: 'Begone',
+          replyCode: defs.constants.INTERNAL_ERROR,
+          methodId: 0,
+          classId: 0,
+        }))
         .then(wait(defs.ConnectionCloseOk))
-        .then(succeed(done), fail(done));
+        .then(cb, cb);
     }));
 
-    it('operator-intiated close', connectionTest((c, done) => {
-      c.on('close', succeed(done));
-      c.on('error', fail(done));
+    it('operator-intiated close', connectionTest((c, cb) => {
+      c.once('close', (err) => {
+        assert.match(err.message, /Connection closed: 320 \(CONNECTION-FORCED\) with message "Begone"/);
+        cb();
+      });
+      c.once('error', (err) => assert.fail(`Unexepcted error: ${err.message}`));
       c.open(OPEN_OPTS);
-    }, (send, wait, done) => {
+    }, (send, wait, cb) => {
       handshake(send, wait)
-        .then((_f) => {
-          send(defs.ConnectionClose, {
-            replyText: 'Begone',
-            replyCode: defs.constants.CONNECTION_FORCED,
-            methodId: 0,
-            classId: 0,
-          });
-        })
+        .then(() => send(defs.ConnectionClose, {
+          replyText: 'Begone',
+          replyCode: defs.constants.CONNECTION_FORCED,
+          methodId: 0,
+          classId: 0,
+        }))
         .then(wait(defs.ConnectionCloseOk))
-        .then(succeed(done), fail(done));
+        .then(cb, cb);
     }));
 
-    it('double close', connectionTest((c, done) => {
-      c.open(OPEN_OPTS, kCallback(() => {
+    it('double close', connectionTest((c, cb) => {
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
         c.close();
         // NB no synchronisation, we do this straight away
-        assert.throws(() => {
-          c.close();
-        });
-        done();
-      }, done));
-    }, (send, wait, done) => {
+        assert.throws(() => c.close());
+        cb();
+      });
+    }, (send, wait, cb) => {
       handshake(send, wait)
         .then(wait(defs.ConnectionClose))
-        .then(() => {
-          send(defs.ConnectionCloseOk, {});
-        })
-        .then(succeed(done), fail(done));
+        .then(() => send(defs.ConnectionCloseOk, {}))
+        .then(cb, cb);
     }));
   });
 
