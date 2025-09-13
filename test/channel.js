@@ -7,9 +7,9 @@ const succeed = util.succeed;
 const fail = util.fail;
 const latch = util.latch;
 const completes = util.completes;
+const handshake = util.handshake;
 const defs = require('../lib/defs');
-const conn_handshake = require('./connection').connection_handshake;
-const OPEN_OPTS = require('./connection').OPEN_OPTS;
+const OPEN_OPTS = require('./data').OPEN_OPTS;
 
 const LOG_ERRORS = process.env.LOG_ERRORS;
 
@@ -28,7 +28,7 @@ function baseChannelTest(client, server) {
 
     pair.server.read(8); // discard the protocol header
     util.runServer(pair.server, (send, wait) => {
-      conn_handshake(send, wait).then(() => {
+      handshake(send, wait).then(() => {
         server(send, wait, bothDone);
       }, fail(bothDone));
     });

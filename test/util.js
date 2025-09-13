@@ -232,6 +232,22 @@ function assertEqualModuloDefaults(original, decodedFields) {
   return true;
 }
 
+function handshake(send, wait) {
+  // kick it off
+  send(defs.ConnectionStart, {
+    versionMajor: 0,
+    versionMinor: 9,
+    serverProperties: {},
+    mechanisms: Buffer.from('PLAIN'),
+    locales: Buffer.from('en_US'),
+  });
+  return wait(defs.ConnectionStartOk)()
+    .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 }))
+    .then(wait(defs.ConnectionTuneOk))
+    .then(wait(defs.ConnectionOpen))
+    .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }));
+}
+
 module.exports = {
   socketPair,
   runServer,
@@ -245,4 +261,5 @@ module.exports = {
   randomString,
   removeExplicitTypes,
   assertEqualModuloDefaults,
+  handshake,
 };

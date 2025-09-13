@@ -4,55 +4,16 @@ const defs = require('../lib/defs');
 const Connection = require('../lib/connection').Connection;
 const HEARTBEAT = require('../lib/frame').HEARTBEAT;
 const HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
-const util = require('./util');
-const succeed = util.succeed;
-const fail = util.fail;
-const latch = util.latch;
-const completes = util.completes;
-const kCallback = util.kCallback;
+const OPEN_OPTS = require('./data').OPEN_OPTS;
+const heartbeat = require('../lib/heartbeat');
+const { latch, handshake, runServer, socketPair } = require('./util');
 
 const LOG_ERRORS = process.env.LOG_ERRORS;
-
-const OPEN_OPTS = {
-  // start-ok
-  clientProperties: {},
-  mechanism: 'PLAIN',
-  response: Buffer.from(['', 'guest', 'guest'].join(String.fromCharCode(0))),
-  locale: 'en_US',
-
-  // tune-ok
-  channelMax: 0,
-  frameMax: 0,
-  heartbeat: 0,
-
-  // open
-  virtualHost: '/',
-  capabilities: '',
-  insist: 0,
-};
-module.exports.OPEN_OPTS = OPEN_OPTS;
-
-function handshake(send, wait) {
-  // kick it off
-  send(defs.ConnectionStart, {
-    versionMajor: 0,
-    versionMinor: 9,
-    serverProperties: {},
-    mechanisms: Buffer.from('PLAIN'),
-    locales: Buffer.from('en_US'),
-  });
-  return wait(defs.ConnectionStartOk)()
-    .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 }))
-    .then(wait(defs.ConnectionTuneOk))
-    .then(wait(defs.ConnectionOpen))
-    .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }));
-}
-module.exports.connection_handshake = handshake;
 
 function connectionTest(client, server) {
   return (_t, done) => {
     const decrementLatch = latch(2, done);
-    const pair = util.socketPair();
+    const pair = socketPair();
     const c = new Connection(pair.client);
     if (LOG_ERRORS) c.on('error', console.warn);
     client(c, decrementLatch);
@@ -61,7 +22,7 @@ function connectionTest(client, server) {
     const protocolHeader = pair.server.read(8);
     assert.deepEqual(Buffer.from(`AMQP${String.fromCharCode(0, 0, 9, 1)}`), protocolHeader);
 
-    util.runServer(pair.server, (send, wait) => {
+    runServer(pair.server, (send, wait) => {
       server(send, wait, decrementLatch, pair.server);
     });
   };
@@ -74,7 +35,7 @@ describe('Connection', () => {
       // RabbitMQ itself will take at least 3 seconds to close the socket
       // in the event of a handshake problem. Instead of using a live
       // connection, I'm just going to pretend.
-      const pair = util.socketPair();
+      const pair = socketPair();
       const conn = new Connection(pair.client);
       pair.server.on('readable', () => pair.server.end());
       conn.open({}, (err) => {
@@ -85,7 +46,7 @@ describe('Connection', () => {
     });
 
     it('bad frame during open', (_t, done) => {
-      const ss = util.socketPair();
+      const ss = socketPair();
       const conn = new (require('../lib/connection').Connection)(ss.client);
       ss.server.on('readable', () => {
         ss.server.write(Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
@@ -117,7 +78,8 @@ describe('Connection', () => {
       });
     }, (send, _wait, cb) => {
       // bad server! bad! whatever were you thinking?
-      completes(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 }), cb);
+      send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 })
+      cb();
     }));
 
     it('unexpected socket close', connectionTest((c, cb) => {
@@ -319,7 +281,6 @@ describe('Connection', () => {
   });
 
   describe('heartbeats', () => {
-    const heartbeat = require('../lib/heartbeat');
 
     beforeEach(() => {
       heartbeat.UNITS_TO_MS = 20;
@@ -329,38 +290,39 @@ describe('Connection', () => {
       heartbeat.UNITS_TO_MS = 1000;
     });
 
-    it('send heartbeat after open', connectionTest((c, done) => {
-      completes(() => {
-        const opts = Object.create(OPEN_OPTS);
-        opts.heartbeat = 1;
-        // Don't leave the error waiting to happen for the next test, this
-        // confuses mocha awfully
-        c.on('error', () => { });
-        c.open(opts);
-      }, done);
-    }, (send, wait, done, socket) => {
+    it('send heartbeat after open', connectionTest((c, cb) => {
+      const opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = 1;
+      // Don't leave the error waiting to happen for the next test
+      c.on('error', (err) => {
+        assert.match(err.message, /Heartbeat timeout/)
+      });
+      c.open(opts);
+      cb()
+    }, (send, wait, cb, socket) => {
       let timer;
       handshake(send, wait)
         .then(() => {
-          timer = setInterval(() => {
-            socket.write(HB_BUF);
-          }, heartbeat.UNITS_TO_MS);
+          timer = setInterval(() => socket.write(HB_BUF), heartbeat.UNITS_TO_MS);
         })
         .then(wait())
         .then((hb) => {
-          if (hb === HEARTBEAT) done();
-          else done('Next frame after silence not a heartbeat');
-          clearInterval(timer);
-        });
+          assert.strictEqual(hb, HEARTBEAT);
+          cb();
+        }).finally(() => clearInterval(timer));
     }));
 
-    it('detect lack of heartbeats', connectionTest((c, done) => {
+    it('detect lack of heartbeats', connectionTest((c, cb) => {
       const opts = Object.create(OPEN_OPTS);
       opts.heartbeat = 1;
-      c.on('error', succeed(done));
+      c.once('error', (err) => {
+        assert.match(err.message, /Heartbeat timeout/)
+        cb();
+      });
       c.open(opts);
-    }, (send, wait, done, _socket) => {
-      handshake(send, wait).then(succeed(done), fail(done));
+    }, (send, wait, cb, _socket) => {
+      handshake(send, wait)
+        .then(cb, cb);
       // conspicuously not sending anything ...
     }));
   });

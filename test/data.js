@@ -204,6 +204,24 @@ for (const k in defs) {
   }
 }
 
+const OPEN_OPTS = {
+  // start-ok
+  clientProperties: {},
+  mechanism: 'PLAIN',
+  response: Buffer.from(['', 'guest', 'guest'].join(String.fromCharCode(0))),
+  locale: 'en_US',
+
+  // tune-ok
+  channelMax: 0,
+  frameMax: 0,
+  heartbeat: 0,
+
+  // open
+  virtualHost: '/',
+  capabilities: '',
+  insist: 0,
+};
+
 module.exports = {
   Octet,
   ShortStr,
@@ -227,4 +245,5 @@ module.exports = {
   methods,
   properties: propertieses,
   rangeInt,
+  OPEN_OPTS,
 };
