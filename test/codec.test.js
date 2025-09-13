@@ -4,8 +4,8 @@ const ints = require('buffer-more-ints');
 const { forAll } = require('claire');
 const codec = require('../lib/codec');
 const defs = require('../lib/defs');
-const amqp = require('./data');
-const { removeExplicitTypes, assertEqualModuloDefaults } = require('./util');
+const amqp = require('./lib/data');
+const { removeExplicitTypes, assertEqualModuloDefaults } = require('./lib/util');
 
 // These just test known encodings; to generate the answers I used RabbitMQ's binary generator module.
 const testCases = [

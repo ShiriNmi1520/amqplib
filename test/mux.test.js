@@ -3,8 +3,8 @@ const assert = require('node:assert');
 const Mux = require('../lib/mux').Mux;
 const PassThrough = require('node:stream').PassThrough;
 
-const latch = require('./util').latch;
-const schedule = require('./util').schedule;
+const latch = require('./lib/util').latch;
+const schedule = require('./lib/util').schedule;
 
 function stream() {
   return new PassThrough({ objectMode: true });

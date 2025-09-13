@@ -1,6 +1,6 @@
 const assert = require('node:assert');
 const api = require('../channel_api');
-const util = require('./util');
+const util = require('./lib/util');
 const succeed = util.succeed;
 const fail = util.fail;
 const schedule = util.schedule;

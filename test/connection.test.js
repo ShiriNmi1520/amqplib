@@ -4,9 +4,9 @@ const defs = require('../lib/defs');
 const Connection = require('../lib/connection').Connection;
 const HEARTBEAT = require('../lib/frame').HEARTBEAT;
 const HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
-const OPEN_OPTS = require('./data').OPEN_OPTS;
+const OPEN_OPTS = require('./lib/data').OPEN_OPTS;
 const heartbeat = require('../lib/heartbeat');
-const { latch, handshake, runServer, socketPair } = require('./util');
+const { latch, handshake, runServer, socketPair } = require('./lib/util');
 
 const LOG_ERRORS = process.env.LOG_ERRORS;
 

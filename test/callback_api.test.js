@@ -2,7 +2,7 @@ const { describe, it, afterEach } = require('node:test');
 const assert = require('node:assert');
 const domain = require('node:domain');
 const { connect } = require('../callback_api');
-const { schedule, randomString, latch } = require('./util');
+const { schedule, randomString, latch } = require('./lib/util');
 
 function waitForMessages(ch, q, cb) {
   ch.checkQueue(q, (e, ok) => {

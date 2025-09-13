@@ -6,8 +6,8 @@ const HEARTBEAT = require('../lib/frame').HEARTBEAT;
 const Stream = require('node:stream');
 const PassThrough = Stream.PassThrough;
 const { choice, forAll, repeat, label, sequence, transform, sized } = require('claire');
-const amqp = require('./data');
-const assertEqualModuloDefaults = require('./util').assertEqualModuloDefaults;
+const amqp = require('./lib/data');
+const assertEqualModuloDefaults = require('./lib/util').assertEqualModuloDefaults;
 const defs = require('../lib/defs');
 
 // We'll need to supply a stream which we manipulate ourselves

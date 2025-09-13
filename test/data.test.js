@@ -1,5 +1,5 @@
 const { forAll } = require('claire');
-const { Octet, ShortStr, LongStr, UShort, ULong, ULongLong, Short, Long, LongLong, Bit, Double, Float, Decimal, Timestamp, FieldTable, FieldArray } = require('./data');
+const { Octet, ShortStr, LongStr, UShort, ULong, ULongLong, Short, Long, LongLong, Bit, Double, Float, Decimal, Timestamp, FieldTable, FieldArray } = require('./lib/data');
 
 const domainProps = [
   [Octet, (n) => n >= 0 && n < 256],

@@ -1,5 +1,5 @@
 const { data: arb, transform, repeat, label, sequence, asGenerator, sized, recursive, choice, Undefined } = require('claire');
-const defs = require('../lib/defs');
+const defs = require('../../lib/defs');
 
 // These aren't exported in claire/index. so I could have to reproduce them I guess.
 function choose(a, b) {

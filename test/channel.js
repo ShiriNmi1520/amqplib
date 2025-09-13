@@ -2,14 +2,14 @@ const assert = require('node:assert');
 const promisify = require('node:util').promisify;
 const Channel = require('../lib/channel').Channel;
 const Connection = require('../lib/connection').Connection;
-const util = require('./util');
+const util = require('./lib/util');
 const succeed = util.succeed;
 const fail = util.fail;
 const latch = util.latch;
 const completes = util.completes;
 const handshake = util.handshake;
 const defs = require('../lib/defs');
-const OPEN_OPTS = require('./data').OPEN_OPTS;
+const OPEN_OPTS = require('./lib/data').OPEN_OPTS;
 
 const LOG_ERRORS = process.env.LOG_ERRORS;
 
