@@ -28,7 +28,8 @@ describe('Callback API', () => {
     let c;
 
     afterEach((_t, done) => {
-      c?.close(done);
+      if (c) c.close(() => done())
+      else done();
     });
 
     it('updateSecret', (_t, done) => {
