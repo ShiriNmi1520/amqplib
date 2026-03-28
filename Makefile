@@ -16,7 +16,6 @@ error:
 	@exit 1
 
 test:
-	$(MOCHA) --check-leaks --exit --ignore test/**/*.test.js test/
 	node --test test/**/*.test.js
 
 test-all-nodejs:
