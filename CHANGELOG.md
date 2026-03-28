@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## v1.0.2
+- Replace url-parse with WHATWG URL API
+
 ## v1.0.1
 - Fix TLS connection failure when connecting to an AMQPS broker using an IP address (IPv4 or IPv6) — setting servername to an IP is not permitted by TLS SNI and throws ERR_INVALID_ARG_VALUE in Node.js 25+
 
