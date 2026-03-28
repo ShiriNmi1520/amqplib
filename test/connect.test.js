@@ -18,7 +18,7 @@ describe('Connect', () => {
       assert.strictEqual(creds.password, password);
     }
 
-    it('no creds', { only: true }, () => {
+    it('no creds', () => {
       const parts = urlparse('amqp://localhost');
       const creds = credentialsFromUrl(parts);
       assertCredentials(creds, 'guest', 'guest');
