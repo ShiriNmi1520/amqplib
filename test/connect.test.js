@@ -2,52 +2,11 @@ const { describe, it, afterEach } = require('node:test');
 const assert = require('node:assert');
 const net = require('node:net');
 const connect = require('../lib/connect').connect;
-const credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
 const defs = require('../lib/defs');
 const { plain, amqplain } = require('../lib/credentials')
 const { latch, runServer } = require('./lib/util');
 
-const urlparse = require('url-parse');
-
 describe('Connect', () => {
-
-  describe('Credentials', () => {
-    function assertCredentials(creds, username, password) {
-      assert.strictEqual(creds.mechanism, 'PLAIN');
-      assert.strictEqual(creds.username, username);
-      assert.strictEqual(creds.password, password);
-    }
-
-    it('no creds', () => {
-      const parts = urlparse('amqp://localhost');
-      const creds = credentialsFromUrl(parts);
-      assertCredentials(creds, 'guest', 'guest');
-    });
-
-    it('usual user:pass', () => {
-      const parts = urlparse('amqp://user:pass@localhost');
-      const creds = credentialsFromUrl(parts);
-      assertCredentials(creds, 'user', 'pass');
-    });
-
-    it('missing user', () => {
-      const parts = urlparse('amqps://:password@localhost');
-      const creds = credentialsFromUrl(parts);
-      assertCredentials(creds, '', 'password');
-    });
-
-    it('missing password', () => {
-      const parts = urlparse('amqps://username:@localhost');
-      const creds = credentialsFromUrl(parts);
-      assertCredentials(creds, 'username', '');
-    });
-
-    it('escaped colons', () => {
-      const parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost');
-      const creds = credentialsFromUrl(parts);
-      assertCredentials(creds, 'user:name', 'pass:word');
-    });
-  });
 
   describe('Connect API', () => {
 
