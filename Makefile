@@ -38,8 +38,5 @@ bin/generate-defs: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
 bin/amqp-rabbitmq-0.9.1.json:
 	curl -L $(AMQP_JSON) > $@
 
-$(ISTANBUL):
-	npm install
-
 $(UGLIFY):
 	npm install
