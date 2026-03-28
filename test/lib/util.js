@@ -1,7 +1,7 @@
 const crypto = require('node:crypto');
-const Connection = require('../lib/connection').Connection;
 const PassThrough = require('node:stream').PassThrough;
-const defs = require('../lib/defs');
+const Connection = require('../../lib/connection').Connection;
+const defs = require('../../lib/defs');
 const assert = require('node:assert');
 
 const schedule = typeof setImmediate === 'function' ? setImmediate : process.nextTick;
@@ -157,49 +157,109 @@ function kCallback(k, ek) {
   };
 }
 
-// A noddy way to make tests depend on the node version.
-function versionGreaterThan(actual, spec) {
-  function int(e) {
-    return parseInt(e, 10);
-  }
+// When encoding, you can supply explicitly-typed fields like `{'!':
+// int32, 50}`. Most of these do not appear in the decoded values, so
+// to compare like-to-like we have to remove them from the input.
+function removeExplicitTypes(input) {
+  switch (typeof input) {
+    case 'object':
+      if (input == null) {
+        return null;
+      }
+      if (Array.isArray(input)) {
+        const newArr = [];
+        for (let i = 0; i < input.length; i++) {
+          newArr[i] = removeExplicitTypes(input[i]);
+        }
+        return newArr;
+      }
+      if (Buffer.isBuffer(input)) {
+        return input;
+      }
+      switch (input['!']) {
+        case 'timestamp':
+        case 'decimal':
+        case 'float':
+          return input;
+        case undefined: {
+          const newObj = {};
+          for (const k in input) {
+            newObj[k] = removeExplicitTypes(input[k]);
+          }
+          return newObj;
+        }
+        default:
+          return input.value;
+      }
 
-  const version = actual.split('.').map(int);
-  const desired = spec.split('.').map(int);
-  for (let i = 0; i < desired.length; i++) {
-    const a = version[i];
-    const b = desired[i];
-    if (a !== b) return a > b;
+    default:
+      return input;
   }
-  return false;
 }
 
-describe('versionGreaterThan', () => {
-  it('full spec', () => {
-    assert(versionGreaterThan('0.8.26', '0.6.12'));
-    assert(versionGreaterThan('0.8.26', '0.8.21'));
-  });
+// Asserts that the decoded fields are equal to the original fields,
+// or equal to a default where absent in the original. The defaults
+// depend on the type of method or properties.
+//
+// This works slightly different for methods and properties: for
+// methods, each field must have a value, so the default is
+// substituted for undefined values when encoding; for properties,
+// fields may be absent in the encoded value, so a default is
+// substituted for missing fields when decoding. The effect is the
+// same so far as these tests are concerned.
+function assertEqualModuloDefaults(original, decodedFields) {
+  const args = defs.info(original.id).args;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    const originalValue = original.fields[arg.name];
+    const decodedValue = decodedFields[arg.name];
+    try {
+      if (originalValue === undefined) {
+        // longstr gets special treatment here, since the defaults are
+        // given as strings rather than buffers, but the decoded values
+        // will be buffers.
+        assert.deepEqual(arg.type === 'longstr' ? Buffer.from(arg.default) : arg.default, decodedValue);
+      } else {
+        assert.deepEqual(removeExplicitTypes(originalValue), decodedValue);
+      }
+    } catch (assertionErr) {
+      const methodOrProps = defs.info(original.id).name;
+      assertionErr.message += ` (frame ${methodOrProps} field ${arg.name})`;
+      throw assertionErr;
+    }
+  }
+  // %%% TODO make sure there's no surplus fields
+  return true;
+}
 
-  it('partial spec', () => {
-    assert(versionGreaterThan('0.9.12', '0.8'));
+function handshake(send, wait) {
+  // kick it off
+  send(defs.ConnectionStart, {
+    versionMajor: 0,
+    versionMinor: 9,
+    serverProperties: {},
+    mechanisms: Buffer.from('PLAIN'),
+    locales: Buffer.from('en_US'),
   });
-
-  it('not greater', () => {
-    assert(!versionGreaterThan('0.8.12', '0.8.26'));
-    assert(!versionGreaterThan('0.6.2', '0.6.12'));
-    assert(!versionGreaterThan('0.8.29', '0.8'));
-  });
-});
+  return wait(defs.ConnectionStartOk)()
+    .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 }))
+    .then(wait(defs.ConnectionTuneOk))
+    .then(wait(defs.ConnectionOpen))
+    .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }));
+}
 
 module.exports = {
-  socketPair: socketPair,
-  runServer: runServer,
-  succeed: succeed,
-  succeedIfAttributeEquals: succeedIfAttributeEquals,
-  fail: fail,
-  latch: latch,
-  completes: completes,
-  kCallback: kCallback,
-  schedule: schedule,
-  randomString: randomString,
-  versionGreaterThan: versionGreaterThan,
+  socketPair,
+  runServer,
+  succeed,
+  succeedIfAttributeEquals,
+  fail,
+  latch,
+  completes,
+  kCallback,
+  schedule,
+  randomString,
+  removeExplicitTypes,
+  assertEqualModuloDefaults,
+  handshake,
 };

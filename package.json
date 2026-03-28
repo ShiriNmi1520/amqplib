@@ -19,12 +19,11 @@
     "@biomejs/biome": "^2.2.2",
     "claire": "0.4.1",
     "lefthook": "^1.12.3",
-    "mocha": "^9.2.2",
-    "nyc": "^15.1.0",
     "uglify-js": "2.8.x"
   },
   "scripts": {
     "test": "make test",
+    "test:only": "node --test --test-only",
     "format": "biome format . --write",
     "lint": "biome lint --max-diagnostics=1000 ."
   },

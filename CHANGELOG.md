@@ -29,6 +29,7 @@
 - Enable noUselessCatch lint rule to prevent useless catch blocks that only rethrow errors
 - Enable noArguments rule to enforce modern rest parameters instead of legacy arguments object
 - Enable bracketSpacing formatting rule to add spaces inside object literals
+- Migrate test suite from Mocha to Node.js built-in test runner
 
 ## v0.10.9
 - Add support for IPv6 urls
