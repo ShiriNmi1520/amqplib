@@ -4,10 +4,7 @@ AMQP_JSON=https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/$(RABBITMQ_
 
 NODEJS_VERSIONS='18.1.0' '20.10.0' '22.14.0' '24.7.0'
 
-MOCHA=./node_modules/.bin/mocha
-_MOCHA=./node_modules/.bin/_mocha
 UGLIFY=./node_modules/.bin/uglifyjs
-NYC=./node_modules/.bin/nyc
 
 .PHONY: test test-all-nodejs coverage lib/defs.js
 
@@ -21,12 +18,11 @@ test:
 test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
 		do echo "-- Node version $$v --"; \
-		nave use $$v $(MOCHA) --exit -R --ignore test/**/*.test.js progress test; \
+		nave use $$v node --test test/**/*.test.js; \
 		done
 
-coverage: $(NYC)
-	$(NYC) --clean --reporter=lcov --reporter=text $(_MOCHA) --exit -R progress --ignore test/**/*.test.js test/
-	@echo "HTML report at file://$$(pwd)/coverage/lcov-report/index.html"
+coverage:
+	node --test --test-coverage test/**/*.test.js
 
 lib/defs.js: clean bin/generate-defs test
 
