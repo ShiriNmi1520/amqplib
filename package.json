@@ -23,7 +23,7 @@
   },
   "scripts": {
     "test": "make test",
-    "test:only": "node --test --test-only test/**/*.test.js",
+    "test:only": "node --test --test-only",
     "format": "biome format . --write",
     "lint": "biome lint --max-diagnostics=1000 ."
   },

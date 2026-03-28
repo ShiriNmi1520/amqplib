@@ -13,16 +13,16 @@ error:
 	@exit 1
 
 test:
-	node --test test/**/*.test.js
+	node --test
 
 test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
 		do echo "-- Node version $$v --"; \
-		nave use $$v node --test test/**/*.test.js; \
+		nave use $$v node --test; \
 		done
 
 coverage:
-	node --test --test-coverage test/**/*.test.js
+	node --test --test-coverage
 
 lib/defs.js: clean bin/generate-defs test
 
