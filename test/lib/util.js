@@ -87,36 +87,6 @@ function runServer(socket, run) {
   return frames;
 }
 
-// Produce a callback that will complete the test successfully
-function succeed(done) {
-  return () => {
-    done();
-  };
-}
-
-// Produce a callback that will complete the test successfully
-// only if the value is an object, it has the specified
-// attribute, and its value is equals to the expected value
-function succeedIfAttributeEquals(attribute, value, done) {
-  return (object) => {
-    if (object && !(object instanceof Error) && value === object[attribute]) {
-      return done();
-    }
-
-    done(new Error(`${attribute} is not equal to ${value}`));
-  };
-}
-
-// Produce a callback that will fail the test, given either an error
-// (to be used as a failure continuation) or any other value (to be
-// used as a success continuation when failure is expected)
-function fail(done) {
-  return (err) => {
-    if (err instanceof Error) done(err);
-    else done(new Error(`Expected to fail, instead got ${err.toString()}`));
-  };
-}
-
 // Create a function that will call done once it's been called itself
 // `count` times. If it's called with an error value, it will
 // immediately call done with that error value.
@@ -148,14 +118,6 @@ function completes(thunk, done) {
   }
 }
 
-// Construct a Node.JS-style callback from a success continuation and
-// an error continuation
-function kCallback(k, ek) {
-  return (err, val) => {
-    if (err === null) k && k(val);
-    else ek && ek(err);
-  };
-}
 
 // When encoding, you can supply explicitly-typed fields like `{'!':
 // int32, 50}`. Most of these do not appear in the decoded values, so
@@ -251,12 +213,8 @@ function handshake(send, wait) {
 module.exports = {
   socketPair,
   runServer,
-  succeed,
-  succeedIfAttributeEquals,
-  fail,
   latch,
   completes,
-  kCallback,
   schedule,
   randomString,
   removeExplicitTypes,
