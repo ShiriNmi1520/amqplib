@@ -4,10 +4,7 @@ AMQP_JSON=https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/$(RABBITMQ_
 
 NODEJS_VERSIONS='18.1.0' '20.10.0' '22.14.0' '24.7.0'
 
-MOCHA=./node_modules/.bin/mocha
-_MOCHA=./node_modules/.bin/_mocha
 UGLIFY=./node_modules/.bin/uglifyjs
-NYC=./node_modules/.bin/nyc
 
 .PHONY: test test-all-nodejs coverage lib/defs.js
 
@@ -16,17 +13,16 @@ error:
 	@exit 1
 
 test:
-	$(MOCHA) --check-leaks -u tdd --exit test/
+	node --test
 
 test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
 		do echo "-- Node version $$v --"; \
-		nave use $$v $(MOCHA) -u tdd --exit -R progress test; \
+		nave use $$v node --test; \
 		done
 
-coverage: $(NYC)
-	$(NYC) --clean --reporter=lcov --reporter=text $(_MOCHA) -u tdd --exit -R progress test/
-	@echo "HTML report at file://$$(pwd)/coverage/lcov-report/index.html"
+coverage:
+	node --test --test-coverage
 
 lib/defs.js: clean bin/generate-defs test
 
@@ -41,9 +37,6 @@ bin/generate-defs: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
 
 bin/amqp-rabbitmq-0.9.1.json:
 	curl -L $(AMQP_JSON) > $@
-
-$(ISTANBUL):
-	npm install
 
 $(UGLIFY):
 	npm install

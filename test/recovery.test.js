@@ -1,7 +1,8 @@
-'use strict';
 
-const assert = require('assert');
-const EventEmitter = require('events');
+
+const { describe, it } = require('node:test');
+const assert = require('node:assert');
+const EventEmitter = require('node:events');
 const recovery = require('../lib/recovery');
 
 class FakePromiseModel extends EventEmitter {
@@ -58,8 +59,8 @@ class FakeCallbackModel extends EventEmitter {
   }
 }
 
-suite('recovery', function () {
-  test('promise recovery reconnects after close', async function () {
+describe('recovery', () => {
+  it('promise recovery reconnects after close', async () => {
     const models = [];
     let opened = 0;
 
@@ -90,7 +91,7 @@ suite('recovery', function () {
     await client.close();
   });
 
-  test('promise recovery runs setup on every connect', async function () {
+  it('promise recovery runs setup on every connect', async () => {
     const models = [];
     let setupCalls = 0;
     let opened = 0;
@@ -125,7 +126,7 @@ suite('recovery', function () {
     await client.close();
   });
 
-  test('callback recovery reconnects and creates channels after reconnect', function (done) {
+  it('callback recovery reconnects and creates channels after reconnect', (done) => {
     const models = [];
     let opened = 0;
 
@@ -143,15 +144,15 @@ suite('recovery', function () {
         jitter: 0,
         maxRetries: 3,
       },
-      function (err, c) {
+      (err, c) => {
         if (err) return done(err);
 
-        c.createChannel(function (createErr, ch) {
+        c.createChannel((createErr, ch) => {
           if (createErr) return done(createErr);
           assert.equal(1, ch.id);
 
-          c.once('connect', function () {
-            c.createChannel(function (reconnectErr, reconnectedChannel) {
+          c.once('connect', () => {
+            c.createChannel((reconnectErr, reconnectedChannel) => {
               if (reconnectErr) return done(reconnectErr);
               assert.equal(2, reconnectedChannel.id);
               c.close(done);
@@ -166,7 +167,7 @@ suite('recovery', function () {
     assert(client);
   });
 
-  test('promise recovery fails after max retries', async function () {
+  it('promise recovery fails after max retries', async () => {
     let attempts = 0;
 
     function openModel() {

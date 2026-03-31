@@ -7,14 +7,20 @@ const recovery = require('./lib/recovery');
 // connect(url, callback)
 // connect(callback)
 function connect(url, options, cb) {
-  if (typeof url === 'function') (cb = url), (url = false), (options = false);
-  else if (typeof options === 'function') (cb = options), (options = false);
+  if (typeof url === 'function') {
+    cb = url;
+    url = false;
+    options = false;
+  } else if (typeof options === 'function') {
+    cb = options;
+    options = false;
+  }
 
   const {connectionOptions, recovery: recoveryOptions} = recovery.splitConnectionOptions(options);
   if (recovery.recoveryEnabled(recoveryOptions)) {
-    const openModel = function () {
+    const openModel = () => {
       return new Promise((resolve, reject) => {
-        raw_connect(url, connectionOptions, function (err, c) {
+        raw_connect(url, connectionOptions, (err, c) => {
           if (err === null) resolve(new CallbackModel(c));
           else reject(err);
         });
@@ -24,9 +30,9 @@ function connect(url, options, cb) {
     return recovery.connectWithRecoveryCallback(openModel, recoveryOptions, cb);
   }
 
-  raw_connect(url, connectionOptions, function (err, c) {
-    if (err === null) cb && cb(null, new CallbackModel(c));
-    else cb && cb(err);
+  raw_connect(url, connectionOptions, (err, c) => {
+    if (err === null) cb(null, new CallbackModel(c));
+    else cb(err);
   });
 }
 

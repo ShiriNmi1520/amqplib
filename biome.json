@@ -6,60 +6,46 @@
     "indentWidth": 2,
     "lineWidth": 140,
     "lineEnding": "lf",
-    "attributePosition": "auto"
+    "attributePosition": "auto",
+    "includes": ["**/*.js", "!test"]
   },
   "linter": {
     "enabled": true,
     "rules": {
       "complexity": {
-        "noCommaOperator": "off",
-        "noUselessCatch": "off",
-        "useArrowFunction": "off",
+        "noCommaOperator": "error",
+        "noUselessCatch": "error",
+        "useArrowFunction": "error",
         "useOptionalChain": "off",
-        "noArguments": "off",
+        "noArguments": "error",
         "useLiteralKeys": "off"
       },
-      "correctness": {
-        "noUnusedFunctionParameters": "error",
-        "noUnusedVariables": "error",
-        "noInnerDeclarations": "error",
-        "useParseIntRadix": "error",
-        "noSwitchDeclarations": "off",
-        "noInvalidUseBeforeDeclaration": "error",
-        "noPrecisionLoss": "off"
+      "suspicious": {
+        "noRedundantUseStrict": "error",
+        "noAsyncPromiseExecutor": "off",
+        "noGlobalIsNan": "error",
+        "noGlobalIsFinite": "error",
+        "noPrototypeBuiltins": "error",
+        "noVar": "error",
+        "noExportsInTest": "off",
+        "useIterableCallbackReturn": "off"
       },
       "style": {
-        "useConst": "off",
-        "useNodejsImportProtocol": "off",
-        "useTemplate": "off",
-        "useExponentiationOperator": "off"
-      },
-      "suspicious": {
-        "noRedundantUseStrict": "off",
-        "noAssignInExpressions": "off",
-        "noAsyncPromiseExecutor": "off",
-        "noDoubleEquals": "off",
-        "noGlobalIsNan": "off",
-        "noRedeclare": "off",
-        "noGlobalIsFinite": "off",
-        "noPrototypeBuiltins": "off",
-        "noVar": "error"
+        "useSingleVarDeclarator": "error"
       }
-    }
+    },
+    "includes": ["**/*.js", "!lib/defs.js"]
   },
   "javascript": {
     "formatter": {
       "arrowParentheses": "always",
       "bracketSameLine": false,
-      "bracketSpacing": false,
+      "bracketSpacing": true,
       "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
       "quoteStyle": "single",
       "semicolons": "always",
       "trailingCommas": "all"
     }
-  },
-  "files": {
-    "includes": ["**/*.js", "!lib/defs.js"]
   }
 }

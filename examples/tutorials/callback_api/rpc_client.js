@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 const amqp = require('amqplib/callback_api');
-const {basename} = require('path');
-const {v4: uuid} = require('uuid');
+const { basename } = require('node:path');
+const { v4: uuid } = require('uuid');
 
 const queue = 'rpc_queue';
 
 const n = parseInt(process.argv[2], 10);
-if (isNaN(n)) {
+if (Number.isNaN(n)) {
   console.warn('Usage: %s number', basename(process.argv[1]));
   process.exit(1);
 }
@@ -16,7 +16,7 @@ amqp.connect((err, connection) => {
   if (err) return bail(err);
   connection.createChannel((err, channel) => {
     if (err) return bail(err, connection);
-    channel.assertQueue('', {exclusive: true}, (err, {queue: replyTo}) => {
+    channel.assertQueue('', { exclusive: true }, (err, { queue: replyTo }) => {
       if (err) return bail(err, connection);
 
       const correlationId = uuid();
@@ -31,10 +31,10 @@ amqp.connect((err, connection) => {
             });
           }
         },
-        {noAck: true},
+        { noAck: true },
       );
 
-      channel.assertQueue(queue, {durable: false}, (err) => {
+      channel.assertQueue(queue, { durable: false }, (err) => {
         if (err) return bail(err, connection);
         console.log(' [x] Requesting fib(%d)', n);
         channel.sendToQueue(queue, Buffer.from(n.toString()), {
